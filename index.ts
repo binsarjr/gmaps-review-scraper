@@ -2,7 +2,7 @@ import { chromium } from "playwright";
 
 const userDataDir = ".browser";
 const browser = await chromium.launchPersistentContext(userDataDir, {
-	headless: false, // bisa dibuat true kalau di server
+	headless: true, // bisa dibuat true kalau di server
 	locale: "id-ID",
 	args: ["--lang=id"],
 });
