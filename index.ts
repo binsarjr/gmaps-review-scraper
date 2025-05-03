@@ -71,7 +71,7 @@ await page.getByRole("tab", { name: "Ulasan" }).click();
 const reviewsTabPanel = await page.getByRole("tabpanel");
 
 // Array untuk menyimpan data review sementara
-const reviewDataArr: any[] = [];
+const allReviews: any[] = [];
 
 for await (const review of reviewGenerator(reviewsTabPanel)) {
 	const text = await review.textContent();
@@ -140,16 +140,18 @@ for await (const review of reviewGenerator(reviewsTabPanel)) {
 		}
 	}
 
-	// Ambil tanggapan dari pemilik (jika ada)
+	// Ambil tanggapan dari pemilik (jika ada) tanpa menggunakan class
 	let ownerResponse = null;
-	const ownerResponseContainer = review.locator(
-		'xpath=.//span[contains(text(), "Tanggapan dari pemilik")]/ancestor::div[contains(@class, "CDe7pd")]'
+	const ownerResponseRoot = review.locator(
+		'xpath=.//span[contains(text(), "Tanggapan dari pemilik")]/parent::div/parent::div'
 	);
-	if ((await ownerResponseContainer.count()) > 0) {
-		const timeLocator = ownerResponseContainer.locator(
-			'xpath=.//span[contains(@class, "DZSIDd")]'
+	if ((await ownerResponseRoot.count()) > 0) {
+		// Ambil waktu: span setelah "Tanggapan dari pemilik"
+		const timeLocator = ownerResponseRoot.locator(
+			'xpath=.//span[contains(text(), "Tanggapan dari pemilik")]/following-sibling::span[1]'
 		);
-		const textLocator = ownerResponseContainer.locator("xpath=.//div[@lang]");
+		// Ambil isi tanggapan: div[@lang] di dalam root
+		const textLocator = ownerResponseRoot.locator("xpath=.//div[@lang]");
 		const time =
 			(await timeLocator.count()) > 0
 				? (await timeLocator.first().textContent()) ?? ""
@@ -167,7 +169,7 @@ for await (const review of reviewGenerator(reviewsTabPanel)) {
 	// Ambil reviewId dari atribut data-review-id
 	const reviewId = (await review.getAttribute("data-review-id")) ?? "";
 
-	reviewDataArr.push({
+	allReviews.push({
 		reviewId,
 		title: title.trim(),
 		address: address.trim(),
@@ -182,7 +184,7 @@ for await (const review of reviewGenerator(reviewsTabPanel)) {
 }
 
 // Setelah semua review terkumpul, proses untuk ambil link share
-for (const data of reviewDataArr) {
+for (const data of allReviews) {
 	const review = data.reviewLocator;
 	// Cari tombol Bagikan di dalam review
 	const shareBtn = review.locator(
@@ -217,7 +219,14 @@ for (const data of reviewDataArr) {
 	delete data.reviewLocator;
 }
 
+// Gabungkan data profile dan review ke satu variabel
+const result = {
+	profile: profile ?? "",
+	name: name?.trim() ?? "",
+	subheading: subheading?.trim() ?? "",
+	poin: poin?.trim() ?? "",
+	reviews: allReviews,
+};
+
 // Print hasil akhir
-for (const data of reviewDataArr) {
-	console.log(data);
-}
+console.log(result);
