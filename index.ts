@@ -218,4 +218,7 @@ try {
 	console.log(JSON.stringify({ success: true, data: result }));
 } catch (error: any) {
 	console.log(JSON.stringify({ success: false, error: error.message }));
+} finally {
+	page.close();
+	browser.close();
 }
